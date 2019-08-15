@@ -1,3 +1,8 @@
+const fs = require('fs');
+const base64 = require('base-64');
+const fetch = require('node-fetch');
+const path = require('path');
+
 var https = require("https"),
     isjson = require("is-json"),
     async = require("async");
@@ -112,6 +117,21 @@ module.exports = (function () {
                       if (f.field === e.name) {
                           e.url = Array.isArray(e.url) ? e.url.concat(f.url) : [f.url]
                           e.filename = Array.isArray(e.filename) ? e.filename.concat(f.filename) : [f.filename]
+                          const options = {
+                            method: 'GET',
+                            headers: {
+                              'Authorization': 'Basic ' + base64.encode(auth.user + ':' + auth.akey),
+                              'Accept': 'application/vnd.gathercontent.v0.5+json'
+                            }
+                          };
+                          fetch(`https://api.gathercontent.com/files/${f.id}/download`, options)
+                            .then(function(res) {
+                              const dest = 'download/' + path.basename(f.file_id + path.extname(f.filename))
+                              const writeStream = fs.createWriteStream(dest);
+                              res.body.pipe(writeStream);
+                            })
+
+
                       }
                   })
               })
