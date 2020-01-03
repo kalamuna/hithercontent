@@ -127,6 +127,10 @@ module.exports = (function () {
                           fetch(`https://api.gathercontent.com/files/${f.id}/download`, options)
                             .then(function(res) {
                               const dest = 'download/' + path.basename(f.file_id + path.extname(f.filename))
+                              if (dest.includes('?')) {
+                                console.log('Question mark found in ', dest);
+                                dest = dest.replace('?', '');
+                              }
                               const writeStream = fs.createWriteStream(dest);
                               res.body.pipe(writeStream);
                             })
