@@ -23,6 +23,8 @@
   "license": "BSD-2-Clause",
   "dependencies": {
     "async": "^1.5.0",
-    "is-json": "^1.2.5"
+    "base-64": "^0.1.0",
+    "is-json": "^1.2.5",
+    "node-fetch": "^2.6.0"
   }
 }
