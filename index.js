@@ -126,11 +126,11 @@ module.exports = (function () {
                           };
                           fetch(`https://api.gathercontent.com/files/${f.id}/download`, options)
                             .then(function(res) {
-                              const dest = 'download/' + path.basename(f.file_id + path.extname(f.filename))
-                              if (dest.includes('?')) {
-                                console.log('Question mark found in ', dest);
-                                dest = dest.replace('?', '');
-                              }
+                              // Determine the end filename
+                              let realFilename = f.file_id.split('?', 1)[0]
+                              realFilename = realFilename.split('#', 1)[0]
+                              const dest = 'download/' + path.basename(realFilename + path.extname(f.filename));
+                              console.log('Saving', dest);
                               const writeStream = fs.createWriteStream(dest);
                               res.body.pipe(writeStream);
                             })
