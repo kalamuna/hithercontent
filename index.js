@@ -245,6 +245,9 @@ module.exports = (function () {
                       if (typeof item_data.id == 'undefined') {
                         item_data.id = 0;
                       }
+                      if (typeof item.data.id == 'undefined') {
+                        item.data.id = 0;
+                      }
                       if (typeof item_data.tier == 'undefined') {
                         item_data.tier = tier;
                       }
