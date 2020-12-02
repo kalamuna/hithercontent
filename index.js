@@ -100,6 +100,12 @@ module.exports = (function () {
   }
 
   var getFilesForItem = function (item, callback) {
+      // If no data is available for the item, return.
+      if (!item || !item.data) {
+         callback(item);
+         return;
+      }
+
       var relevantElements = []
       if (Array.isArray(item.data.config)) {
           item.data.config.forEach(c => {
