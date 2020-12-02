@@ -239,6 +239,15 @@ module.exports = (function () {
           var getItem = function (root_id, tier, siblings_store, finishItem) {
               var storeItem = function (item) {
                       var item_data = processItem(item);
+                      if (typeof item_data.position == 'undefined') {
+                        item_data.position = "0";
+                      }
+                      if (typeof item_data.id == 'undefined') {
+                        item_data.id = 0;
+                      }
+                      if (typeof item_data.tier == 'undefined') {
+                        item_data.tier = tier;
+                      }
                       item_data.position = item_data.position || item.data.position || "0"
                       item_data.id = item_data.id || item.data.id || 0;
                       item_data.tier = item_data.tier || tier
