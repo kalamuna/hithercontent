@@ -112,6 +112,9 @@ module.exports = (function () {
       if (relevantElements.length > 0) {
           getJSONfromAPI(`/items/${item.data.id}/files`, filesData => {
               // go through each item and match to element
+              if (typeof filesData.data == 'undefined') {
+                return;
+              }
               filesData.data.forEach(f => {
                   relevantElements.forEach(e => {
                       if (f.field === e.name) {
