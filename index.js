@@ -101,7 +101,7 @@ module.exports = (function () {
 
   var getFilesForItem = function (item, callback) {
       var relevantElements = []
-      if (Array.isArray(item.data.config)) {
+      if (typeof item.data != "undefined" && Array.isArray(item.data.config)) {
           item.data.config.forEach(c => {
               if (Array.isArray(c.elements)) {
                   relevantElements = relevantElements.concat(c.elements.filter(v => v.type === "files"))
