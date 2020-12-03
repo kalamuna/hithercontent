@@ -1,3 +1,8 @@
+const fs = require('fs');
+const base64 = require('base-64');
+const fetch = require('node-fetch');
+const path = require('path');
+
 var https = require("https"),
     isjson = require("is-json"),
     async = require("async");
@@ -96,7 +101,7 @@ module.exports = (function () {
 
   var getFilesForItem = function (item, callback) {
       var relevantElements = []
-      if (Array.isArray(item.data.config)) {
+      if (typeof item.data != "undefined" && Array.isArray(item.data.config)) {
           item.data.config.forEach(c => {
               if (Array.isArray(c.elements)) {
                   relevantElements = relevantElements.concat(c.elements.filter(v => v.type === "files"))
@@ -107,11 +112,40 @@ module.exports = (function () {
       if (relevantElements.length > 0) {
           getJSONfromAPI(`/items/${item.data.id}/files`, filesData => {
               // go through each item and match to element
+              if (typeof filesData.data == 'undefined') {
+                return;
+              }
               filesData.data.forEach(f => {
                   relevantElements.forEach(e => {
                       if (f.field === e.name) {
                           e.url = Array.isArray(e.url) ? e.url.concat(f.url) : [f.url]
                           e.filename = Array.isArray(e.filename) ? e.filename.concat(f.filename) : [f.filename]
+                
+                          // Check whether to download the file.
+                          if (f.file_id) {
+                            // Determine the end filename
+                            let realFilename = f.file_id.split('?', 1)[0]
+                            realFilename = realFilename.split('#', 1)[0]
+                            const dest = 'download/' + path.basename(realFilename + path.extname(f.filename));
+                            if (!fs.existsSync(dest)) {
+                              const options = {
+                                method: 'GET',
+                                headers: {
+                                  'Authorization': 'Basic ' + base64.encode(auth.user + ':' + auth.akey),
+                                  'Accept': 'application/vnd.gathercontent.v0.5+json'
+                                }
+                              };
+                              fetch(`https://api.gathercontent.com/files/${f.id}/download`, options)
+                                .then(function(res) {
+                                  console.log('Saving', dest);
+                                  const writeStream = fs.createWriteStream(dest);
+                                  res.body.pipe(writeStream);
+                                })
+                            }
+                            else {
+                              console.log('Exists already:', dest);
+                            }
+                          }
                       }
                   })
               })
@@ -208,6 +242,19 @@ module.exports = (function () {
           var getItem = function (root_id, tier, siblings_store, finishItem) {
               var storeItem = function (item) {
                       var item_data = processItem(item);
+                      if (typeof item_data.position == 'undefined') {
+                        item_data.position = "0";
+                      }
+                      if (typeof item_data.id == 'undefined') {
+                        item_data.id = 0;
+                      }
+                      if (typeof item.data == 'undefined') {
+                        item.data = {};
+                        item.data.id = 0;
+                      }
+                      if (typeof item_data.tier == 'undefined') {
+                        item_data.tier = tier;
+                      }
                       item_data.position = item_data.position || item.data.position || "0"
                       item_data.id = item_data.id || item.data.id || 0;
                       item_data.tier = item_data.tier || tier
