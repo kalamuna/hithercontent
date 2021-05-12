@@ -2,10 +2,7 @@ const fs = require('fs');
 const base64 = require('base-64');
 const fetch = require('node-fetch');
 const path = require('path');
-
-var https = require("https"),
-    isjson = require("is-json"),
-    async = require("async");
+const async = require("async");
 
 module.exports = (function () {
 
@@ -27,38 +24,39 @@ module.exports = (function () {
       init(cred);
   }
 
-  var getJSONfromAPI = function (request, callback) {
-
-    var options = {
-      auth: auth.user + ":" + auth.akey,
+  function fetchWithErrorHandling(request) {
+    const baseUrl = "https://api.gathercontent.com";
+    const options = {
       headers: {
-        "Accept": "application/vnd.gathercontent.v0.5+json"
-      },
-      host: "api.gathercontent.com",
-      path: request
+        'Authorization': 'Basic ' + base64.encode(auth.user + ':' + auth.akey),
+        'Accept': 'application/vnd.gathercontent.v0.5+json'
+      }
     };
 
-    var req = https.get(options, function (res) {
-
-      var body = "";
-
-      res.on("data", function (chunk) {
-        body += chunk;
-      });
-
-      res.on("end", function () {
-        var data = isjson(body) ? JSON.parse(body) : {};
-        if (callback && typeof callback === "function") {
-          callback(data);
+    return fetch(baseUrl.concat(request), options)
+      .then(res => {
+        if (res.ok) {
+          return res;
         }
-      });
+        if (res.status === 429) {
+          const retryAfter = res.headers.get('retry-after');
+          console.log('Rate limit hit, retrying in ' + retryAfter);
+          return new Promise(resolve => {
+            setTimeout(() => {
+              resolve(fetchWithErrorHandling(request))
+            }, retryAfter * 1000)
+          });
+        } else {
+          throw new Error(res.status + ' ' + res.statusText)
+        }
+      })
+      .catch(console.log)
+  }
 
-    });
-
-    req.on("error", function (e) {
-      console.log(e);
-    });
-
+  var getJSONfromAPI = function (request, callback = () => {}) {
+    fetchWithErrorHandling(request)
+      .then(res => res.json())
+      .then(callback);
   };
 
   var reduceItemToKVPairs = function (d) {
@@ -128,14 +126,7 @@ module.exports = (function () {
                             realFilename = realFilename.split('#', 1)[0]
                             const dest = 'download/' + path.basename(realFilename + path.extname(f.filename));
                             if (!fs.existsSync(dest)) {
-                              const options = {
-                                method: 'GET',
-                                headers: {
-                                  'Authorization': 'Basic ' + base64.encode(auth.user + ':' + auth.akey),
-                                  'Accept': 'application/vnd.gathercontent.v0.5+json'
-                                }
-                              };
-                              fetch(`https://api.gathercontent.com/files/${f.id}/download`, options)
+                              fetchWithErrorHandling(`/files/${f.id}/download`)
                                 .then(function(res) {
                                   console.log('Saving', dest);
                                   const writeStream = fs.createWriteStream(dest);
