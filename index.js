@@ -126,14 +126,7 @@ module.exports = (function () {
                             realFilename = realFilename.split('#', 1)[0]
                             const dest = 'download/' + path.basename(realFilename + path.extname(f.filename));
                             if (!fs.existsSync(dest)) {
-                              const options = {
-                                method: 'GET',
-                                headers: {
-                                  'Authorization': 'Basic ' + base64.encode(auth.user + ':' + auth.akey),
-                                  'Accept': 'application/vnd.gathercontent.v0.5+json'
-                                }
-                              };
-                              fetch(`https://api.gathercontent.com/files/${f.id}/download`, options)
+                              fetchWithErrorHandling(`/files/${f.id}/download`)
                                 .then(function(res) {
                                   console.log('Saving', dest);
                                   const writeStream = fs.createWriteStream(dest);
