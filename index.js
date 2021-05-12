@@ -2,10 +2,7 @@ const fs = require('fs');
 const base64 = require('base-64');
 const fetch = require('node-fetch');
 const path = require('path');
-
-var https = require("https"),
-    isjson = require("is-json"),
-    async = require("async");
+const async = require("async");
 
 module.exports = (function () {
 
@@ -27,38 +24,19 @@ module.exports = (function () {
       init(cred);
   }
 
-  var getJSONfromAPI = function (request, callback) {
-
-    var options = {
-      auth: auth.user + ":" + auth.akey,
+  var getJSONfromAPI = function (request, callback = () => {}) {
+    const baseUrl = "https://api.gathercontent.com";
+    const options = {
       headers: {
-        "Accept": "application/vnd.gathercontent.v0.5+json"
-      },
-      host: "api.gathercontent.com",
-      path: request
+        'Authorization': 'Basic ' + base64.encode(auth.user + ':' + auth.akey),
+        'Accept': 'application/vnd.gathercontent.v0.5+json'
+      }
     };
 
-    var req = https.get(options, function (res) {
-
-      var body = "";
-
-      res.on("data", function (chunk) {
-        body += chunk;
-      });
-
-      res.on("end", function () {
-        var data = isjson(body) ? JSON.parse(body) : {};
-        if (callback && typeof callback === "function") {
-          callback(data);
-        }
-      });
-
-    });
-
-    req.on("error", function (e) {
-      console.log(e);
-    });
-
+    fetch(baseUrl.concat(request), options)
+      .then(res => res.json())
+      .then(callback)
+      .catch(console.log);
   };
 
   var reduceItemToKVPairs = function (d) {
