@@ -24,7 +24,7 @@ module.exports = (function () {
       init(cred);
   }
 
-  var getJSONfromAPI = function (request, callback = () => {}) {
+  function fetchWithErrorHandling(request) {
     const baseUrl = "https://api.gathercontent.com";
     const options = {
       headers: {
@@ -33,7 +33,7 @@ module.exports = (function () {
       }
     };
 
-    fetch(baseUrl.concat(request), options)
+    return fetch(baseUrl.concat(request), options)
       .then(res => {
         if (res.ok) {
           return res;
@@ -41,16 +41,22 @@ module.exports = (function () {
         if (res.status === 429) {
           const retryAfter = res.headers.get('retry-after');
           console.log('Rate limit hit, retrying in ' + retryAfter);
-          setTimeout(() => {
-            getJSONfromAPI(request, callback)
-          }, retryAfter * 1000)
+          return new Promise(resolve => {
+            setTimeout(() => {
+              resolve(fetchWithErrorHandling(request))
+            }, retryAfter * 1000)
+          });
         } else {
           throw new Error(res.status + ' ' + res.statusText)
         }
       })
+      .catch(console.log)
+  }
+
+  var getJSONfromAPI = function (request, callback = () => {}) {
+    fetchWithErrorHandling(request)
       .then(res => res.json())
-      .then(callback)
-      .catch(console.log);
+      .then(callback);
   };
 
   var reduceItemToKVPairs = function (d) {
