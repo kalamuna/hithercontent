@@ -34,6 +34,20 @@ module.exports = (function () {
     };
 
     fetch(baseUrl.concat(request), options)
+      .then(res => {
+        if (res.ok) {
+          return res;
+        }
+        if (res.status === 429) {
+          const retryAfter = res.headers.get('retry-after');
+          console.log('Rate limit hit, retrying in ' + retryAfter);
+          setTimeout(() => {
+            getJSONfromAPI(request, callback)
+          }, retryAfter * 1000)
+        } else {
+          throw new Error(res.status + ' ' + res.statusText)
+        }
+      })
       .then(res => res.json())
       .then(callback)
       .catch(console.log);
